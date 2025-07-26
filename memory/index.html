@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>記憶ゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 1rem 0;
+            font-size: 1.2rem;
+        }
+
+        .moves, .time, .pairs {
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 2rem 0;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background: linear-gradient(45deg, #4CAF50, #45A049);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .card.flipped {
+            background: linear-gradient(45deg, #FF6B6B, #FF5252);
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            background: linear-gradient(45deg, #4ECDC4, #26C6DA);
+            cursor: default;
+            animation: matchPulse 0.6s ease-in-out;
+        }
+
+        .card.matched:hover {
+            transform: none;
+        }
+
+        @keyframes matchPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .card-content {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card.flipped .card-content,
+        .card.matched .card-content {
+            opacity: 1;
+        }
+
+        .controls {
+            margin: 1rem 0;
+            font-size: 1rem;
+        }
+
+        .game-complete {
+            font-size: 2rem;
+            color: #4CAF50;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .difficulty {
+            margin: 1rem 0;
+        }
+
+        .difficulty select {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+
+        .difficulty select option {
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧠 記憶ゲーム</h1>
+        
+        <div class="difficulty">
+            <label for="difficultySelect">難易度: </label>
+            <select id="difficultySelect" onchange="changeDifficulty()">
+                <option value="easy">簡単 (4x4)</option>
+                <option value="medium">普通 (4x6)</option>
+                <option value="hard">難しい (6x6)</option>
+            </select>
+        </div>
+        
+        <div class="game-info">
+            <div class="moves">手数: <span id="moves">0</span></div>
+            <div class="time">時間: <span id="time">00:00</span></div>
+            <div class="pairs">ペア: <span id="pairs">0</span>/<span id="totalPairs">8</span></div>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+        
+        <div class="controls">
+            カードをクリックして同じペアを見つけよう！
+        </div>
+        
+        <div class="game-complete" id="gameComplete">
+            🎉 ゲームクリア！ 🎉
+        </div>
+        
+        <button class="restart-btn" onclick="startNewGame()">新しいゲーム</button>
+        <a href="../index.html" class="back-btn">ホームに戻る</a>
+    </div>
+
+    <script>
+        let gameBoard = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let isGameActive = false;
+        
+        // 難易度設定
+        const difficulties = {
+            easy: { rows: 4, cols: 4 },
+            medium: { rows: 4, cols: 6 },
+            hard: { rows: 6, cols: 6 }
+        };
+        
+        let currentDifficulty = 'easy';
+        
+        // 絵文字セット
+        const emojis = [
+            '🎯', '🎨', '🎭', '🎪', '🎸', '🎺', '🎻', '🎹',
+            '🚗', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒',
+            '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+            '🍎', '🍊', '🍋', '🍌', '🍇', '🍓', '🥝', '🍑',
+            '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏓', '🥏'
+        ];
+
+        function changeDifficulty() {
+            currentDifficulty = document.getElementById('difficultySelect').value;
+            startNewGame();
+        }
+
+        function createGameBoard() {
+            const { rows, cols } = difficulties[currentDifficulty];
+            const totalCards = rows * cols;
+            const pairsNeeded = totalCards / 2;
+            
+            // ゲームボードの配列をクリア
+            gameBoard = [];
+            
+            // ペアを作成
+            const selectedEmojis = emojis.slice(0, pairsNeeded);
+            const cardValues = [...selectedEmojis, ...selectedEmojis];
+            
+            // シャッフル
+            for (let i = cardValues.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardValues[i], cardValues[j]] = [cardValues[j], cardValues[i]];
+            }
+            
+            // カードオブジェクトを作成
+            for (let i = 0; i < totalCards; i++) {
+                gameBoard.push({
+                    id: i,
+                    value: cardValues[i],
+                    flipped: false,
+                    matched: false
+                });
+            }
+            
+            // HTMLを更新
+            updateGameBoardHTML();
+            document.getElementById('totalPairs').textContent = pairsNeeded;
+        }
+
+        function updateGameBoardHTML() {
+            const { rows, cols } = difficulties[currentDifficulty];
+            const boardElement = document.getElementById('gameBoard');
+            
+            // グリッドを設定
+            boardElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            boardElement.innerHTML = '';
+            
+            gameBoard.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.onclick = () => flipCard(card.id);
+                
+                const contentElement = document.createElement('div');
+                contentElement.className = 'card-content';
+                contentElement.textContent = card.value;
+                
+                cardElement.appendChild(contentElement);
+                boardElement.appendChild(cardElement);
+            });
+        }
+
+        function flipCard(cardId) {
+            if (!isGameActive) {
+                isGameActive = true;
+                startTimer();
+            }
+            
+            const card = gameBoard[cardId];
+            const cardElement = document.querySelectorAll('.card')[cardId];
+            
+            // すでにめくられているか、マッチ済みの場合は何もしない
+            if (card.flipped || card.matched || flippedCards.length >= 2) {
+                return;
+            }
+            
+            // カードをめくる
+            card.flipped = true;
+            cardElement.classList.add('flipped');
+            flippedCards.push(cardId);
+            
+            // 2枚めくられた場合
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                
+                setTimeout(() => {
+                    checkMatch();
+                }, 1000);
+            }
+        }
+
+        function checkMatch() {
+            const [card1Id, card2Id] = flippedCards;
+            const card1 = gameBoard[card1Id];
+            const card2 = gameBoard[card2Id];
+            const cardElements = document.querySelectorAll('.card');
+            
+            if (card1.value === card2.value) {
+                // マッチした場合
+                card1.matched = true;
+                card2.matched = true;
+                cardElements[card1Id].classList.add('matched');
+                cardElements[card2Id].classList.add('matched');
+                cardElements[card1Id].classList.remove('flipped');
+                cardElements[card2Id].classList.remove('flipped');
+                
+                matchedPairs++;
+                document.getElementById('pairs').textContent = matchedPairs;
+                
+                // ゲームクリアチェック
+                const totalPairs = parseInt(document.getElementById('totalPairs').textContent);
+                if (matchedPairs === totalPairs) {
+                    gameComplete();
+                }
+            } else {
+                // マッチしなかった場合
+                card1.flipped = false;
+                card2.flipped = false;
+                cardElements[card1Id].classList.remove('flipped');
+                cardElements[card2Id].classList.remove('flipped');
+            }
+            
+            flippedCards = [];
+        }
+
+        function startTimer() {
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            
+            const now = new Date();
+            const elapsed = Math.floor((now - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            
+            document.getElementById('time').textContent = `${minutes}:${seconds}`;
+        }
+
+        function gameComplete() {
+            clearInterval(timerInterval);
+            document.getElementById('gameComplete').style.display = 'block';
+            isGameActive = false;
+        }
+
+        function startNewGame() {
+            // リセット
+            matchedPairs = 0;
+            moves = 0;
+            flippedCards = [];
+            isGameActive = false;
+            startTime = null;
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // UI更新
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('time').textContent = '00:00';
+            document.getElementById('pairs').textContent = '0';
+            document.getElementById('gameComplete').style.display = 'none';
+            
+            // 新しいボードを作成
+            createGameBoard();
+        }
+
+        // ゲーム初期化
+        startNewGame();
+    </script>
+</body>
+</html>
