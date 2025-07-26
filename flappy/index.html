@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フラッピーバード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #gameCanvas {
+            border: 3px solid white;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 1rem 0;
+            font-size: 1.2rem;
+        }
+
+        .score, .best-score {
+            font-weight: bold;
+        }
+
+        .controls {
+            margin: 1rem 0;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .game-over h2 {
+            color: #ff4444;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            color: #FFD700;
+        }
+
+        .start-btn, .restart-btn {
+            background: linear-gradient(45deg, #4CAF50, #45A049);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        .start-btn:hover, .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            display: block;
+        }
+
+        .instructions h3 {
+            color: #4CAF50;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .instructions p {
+            font-size: 1.2rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🐦 フラッピーバード</h1>
+        
+        <div class="game-info">
+            <div class="score">スコア: <span id="score">0</span></div>
+            <div class="best-score">ベスト: <span id="bestScore">0</span></div>
+        </div>
+        
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        
+        <div class="controls">
+            クリック、スペースキー、または画面タップで羽ばたき
+        </div>
+        
+        <a href="../index.html" class="back-btn">ホームに戻る</a>
+        
+        <div class="instructions" id="instructions">
+            <h3>ゲームの遊び方</h3>
+            <p>🐦 鳥をタップして飛ばそう！</p>
+            <p>🌿 緑のパイプを避けながら進もう</p>
+            <p>📈 スコアを稼いでベストを更新しよう</p>
+            <button class="start-btn" onclick="startGame()">ゲーム開始</button>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>ゲームオーバー！</h2>
+            <div class="final-score">
+                スコア: <span id="finalScore">0</span>
+            </div>
+            <div class="final-score">
+                ベストスコア: <span id="finalBestScore">0</span>
+            </div>
+            <button class="restart-btn" onclick="restartGame()">再挑戦</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameStarted = false;
+        let gameRunning = false;
+        let score = 0;
+        let bestScore = localStorage.getItem('flappyBestScore') || 0;
+
+        // 鳥のオブジェクト
+        const bird = {
+            x: 50,
+            y: canvas.height / 2,
+            width: 40,
+            height: 30,
+            velocity: 0,
+            gravity: 0.5,
+            jumpStrength: -10,
+            rotation: 0
+        };
+
+        // パイプの配列
+        let pipes = [];
+        const pipeWidth = 60;
+        const pipeGap = 150;
+        const pipeSpeed = 2;
+
+        // 背景の雲
+        let clouds = [];
+
+        function initGame() {
+            pipes = [];
+            clouds = [];
+            score = 0;
+            bird.y = canvas.height / 2;
+            bird.velocity = 0;
+            bird.rotation = 0;
+            
+            // 雲を初期化
+            for (let i = 0; i < 5; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 200,
+                    size: Math.random() * 30 + 20,
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+            
+            updateScore();
+            document.getElementById('bestScore').textContent = bestScore;
+        }
+
+        function startGame() {
+            gameStarted = true;
+            gameRunning = true;
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            initGame();
+            gameLoop();
+        }
+
+        function restartGame() {
+            gameStarted = true;
+            gameRunning = true;
+            document.getElementById('gameOver').style.display = 'none';
+            initGame();
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('flappyBestScore', bestScore);
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalBestScore').textContent = bestScore;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+        }
+
+        function jump() {
+            if (gameRunning) {
+                bird.velocity = bird.jumpStrength;
+            }
+        }
+
+        function updateBird() {
+            if (!gameRunning) return;
+            
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+            
+            // 回転角度を速度に基づいて計算
+            bird.rotation = Math.min(Math.max(bird.velocity * 3, -30), 90);
+            
+            // 地面や天井との衝突判定
+            if (bird.y + bird.height > canvas.height || bird.y < 0) {
+                gameOver();
+            }
+        }
+
+        function updatePipes() {
+            if (!gameRunning) return;
+            
+            // 新しいパイプを追加
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+                const pipeHeight = Math.random() * (canvas.height - pipeGap - 200) + 100;
+                pipes.push({
+                    x: canvas.width,
+                    topHeight: pipeHeight,
+                    bottomY: pipeHeight + pipeGap,
+                    passed: false
+                });
+            }
+            
+            // パイプを移動
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= pipeSpeed;
+                
+                // スコア判定
+                if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                    pipes[i].passed = true;
+                    score++;
+                    updateScore();
+                }
+                
+                // 画面外のパイプを削除
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+                
+                // 衝突判定
+                if (bird.x < pipes[i].x + pipeWidth &&
+                    bird.x + bird.width > pipes[i].x &&
+                    (bird.y < pipes[i].topHeight || bird.y + bird.height > pipes[i].bottomY)) {
+                    gameOver();
+                }
+            }
+        }
+
+        function updateClouds() {
+            clouds.forEach(cloud => {
+                cloud.x -= cloud.speed;
+                if (cloud.x + cloud.size < 0) {
+                    cloud.x = canvas.width + cloud.size;
+                    cloud.y = Math.random() * 200;
+                }
+            });
+        }
+
+        function drawBackground() {
+            // 空のグラデーション
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#98FB98');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 雲を描画
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            clouds.forEach(cloud => {
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, cloud.size, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.size * 0.5, cloud.y, cloud.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(cloud.x + cloud.size, cloud.y, cloud.size * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+            ctx.rotate(bird.rotation * Math.PI / 180);
+            
+            // 鳥の体
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(-bird.width / 2, -bird.height / 2, bird.width, bird.height);
+            
+            // 鳥のくちばし
+            ctx.fillStyle = '#FF8C00';
+            ctx.beginPath();
+            ctx.moveTo(bird.width / 2, -5);
+            ctx.lineTo(bird.width / 2 + 15, 0);
+            ctx.lineTo(bird.width / 2, 5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 鳥の目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(bird.width / 4, -bird.height / 4, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(bird.width / 4 + 2, -bird.height / 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = '#4CAF50';
+            pipes.forEach(pipe => {
+                // 上のパイプ
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                // 下のパイプ
+                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
+                
+                // パイプの境界線
+                ctx.strokeStyle = '#2E7D32';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                ctx.strokeRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
+            });
+        }
+
+        function drawScore() {
+            if (gameRunning) {
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeText(score.toString(), canvas.width / 2, 60);
+                ctx.fillText(score.toString(), canvas.width / 2, 60);
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            updateBird();
+            updatePipes();
+            updateClouds();
+            
+            drawBackground();
+            drawPipes();
+            drawBird();
+            drawScore();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // イベントリスナー
+        canvas.addEventListener('click', jump);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        // タッチイベント（モバイル対応）
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        // ゲーム初期化
+        initGame();
+        
+        // 初期表示でベストスコアを設定
+        document.getElementById('bestScore').textContent = bestScore;
+    </script>
+</body>
+</html>

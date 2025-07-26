@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シンプルゲーム集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .game-card p {
+            font-size: 1rem;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .game-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 シンプルゲーム集</h1>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">
+            楽しい5つのミニゲームをお楽しみください！
+        </p>
+        
+        <div class="games-grid">
+            <a href="snake/index.html" class="game-card">
+                <span class="game-emoji">🐍</span>
+                <h3>スネークゲーム</h3>
+                <p>クラシックなヘビゲーム。餌を食べて成長しよう！</p>
+            </a>
+            
+            <a href="tetris/index.html" class="game-card">
+                <span class="game-emoji">🧩</span>
+                <h3>テトリス</h3>
+                <p>落ちてくるブロックを積み上げて行を消そう！</p>
+            </a>
+            
+            <a href="breakout/index.html" class="game-card">
+                <span class="game-emoji">🏓</span>
+                <h3>ブロック崩し</h3>
+                <p>パドルでボールを跳ね返してブロックを壊そう！</p>
+            </a>
+            
+            <a href="memory/index.html" class="game-card">
+                <span class="game-emoji">🧠</span>
+                <h3>記憶ゲーム</h3>
+                <p>カードをめくって同じペアを見つけよう！</p>
+            </a>
+            
+            <a href="flappy/index.html" class="game-card">
+                <span class="game-emoji">🐦</span>
+                <h3>フラッピーバード</h3>
+                <p>鳥を操作して障害物を避けて飛び続けよう！</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
